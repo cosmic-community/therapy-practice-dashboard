@@ -11,7 +11,14 @@ export default function AnalyticsDashboard() {
   const [currentStats, setCurrentStats] = useState<DashboardStats | null>(null);
   const [previousStats, setPreviousStats] = useState<DashboardStats | null>(null);
   const dateRanges = getDateRanges();
-  const [selectedRange, setSelectedRange] = useState<DateRange>(dateRanges[2]); // Last 30 days
+  const [selectedRange, setSelectedRange] = useState<DateRange>(() => {
+    // Provide a safe default if dateRanges[2] is undefined
+    return dateRanges[2] || dateRanges[0] || {
+      label: 'Last 30 days',
+      startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      endDate: new Date().toISOString().split('T')[0]
+    };
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
