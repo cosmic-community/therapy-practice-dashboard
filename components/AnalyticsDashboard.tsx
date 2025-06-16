@@ -11,19 +11,14 @@ export default function AnalyticsDashboard() {
   const [currentStats, setCurrentStats] = useState<DashboardStats | null>(null);
   const [previousStats, setPreviousStats] = useState<DashboardStats | null>(null);
   const dateRanges = getDateRanges();
+  
+  // Initialize with a safe default from available date ranges
   const [selectedRange, setSelectedRange] = useState<DateRange>(() => {
-    // Provide a safe default with proper string dates
-    const defaultRange = dateRanges[2] || dateRanges[0];
-    if (defaultRange && defaultRange.startDate && defaultRange.endDate) {
-      return defaultRange;
-    }
-    // Fallback to a safe default
-    return {
-      label: 'Last 30 days',
-      startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0]
-    };
+    // Use the "Last 30 days" option if available, otherwise fallback to the first available range
+    const defaultRange = dateRanges.find(range => range.label === 'Last 30 days') || dateRanges[0];
+    return defaultRange;
   });
+  
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -143,18 +138,16 @@ export default function AnalyticsDashboard() {
               value={selectedRange.label}
               onChange={(e) => {
                 const range = dateRanges.find(r => r.label === e.target.value);
-                if (range && range.startDate && range.endDate) {
+                if (range) {
                   setSelectedRange(range);
                 }
               }}
             >
-              {dateRanges
-                .filter(range => range.startDate && range.endDate)
-                .map((range) => (
-                  <option key={range.label} value={range.label}>
-                    {range.label}
-                  </option>
-                ))}
+              {dateRanges.map((range) => (
+                <option key={range.label} value={range.label}>
+                  {range.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>
