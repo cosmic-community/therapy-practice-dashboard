@@ -11,7 +11,7 @@ export default function AnalyticsDashboard() {
   const [currentStats, setCurrentStats] = useState<DashboardStats | null>(null);
   const [previousStats, setPreviousStats] = useState<DashboardStats | null>(null);
   
-  // Create a safe default date range
+  // Create a safe default date range with guaranteed string values
   const createDefaultDateRange = (): DateRange => {
     const endDate = new Date();
     const startDate = new Date();
@@ -24,13 +24,35 @@ export default function AnalyticsDashboard() {
     };
   };
 
-  // Get date ranges and ensure they all have valid string values
-  const rawDateRanges = getDateRanges();
-  const validDateRanges = rawDateRanges.map(range => ({
-    label: range.label,
-    startDate: range.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    endDate: range.endDate || new Date().toISOString().split('T')[0]
-  }));
+  // Safely process date ranges to ensure all have valid string values
+  const getValidDateRanges = (): DateRange[] => {
+    try {
+      const rawDateRanges = getDateRanges();
+      return rawDateRanges
+        .map(range => {
+          // Ensure both startDate and endDate are strings
+          const startDate = range.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          const endDate = range.endDate || new Date().toISOString().split('T')[0];
+          
+          return {
+            label: range.label,
+            startDate,
+            endDate
+          };
+        })
+        .filter((range): range is DateRange => 
+          typeof range.startDate === 'string' && 
+          typeof range.endDate === 'string' &&
+          range.startDate.length > 0 &&
+          range.endDate.length > 0
+        );
+    } catch (error) {
+      console.error('Error processing date ranges:', error);
+      return [createDefaultDateRange()];
+    }
+  };
+
+  const validDateRanges = getValidDateRanges();
 
   const [selectedRange, setSelectedRange] = useState<DateRange>(() => {
     if (validDateRanges.length > 0) {
@@ -46,6 +68,13 @@ export default function AnalyticsDashboard() {
     async function fetchAnalytics() {
       setLoading(true);
       try {
+        // Validate selectedRange has proper string values
+        if (!selectedRange.startDate || !selectedRange.endDate) {
+          console.error('Invalid date range selected');
+          setLoading(false);
+          return;
+        }
+
         // Fetch current period data
         const [currentAppointments, currentPayments] = await Promise.all([
           getAppointments({
@@ -65,8 +94,11 @@ export default function AnalyticsDashboard() {
         setCurrentStats(currentStatsData);
 
         // Calculate previous period for comparison
-        const daysDiff = new Date(selectedRange.endDate).getTime() - new Date(selectedRange.startDate).getTime();
-        const previousEndDate = new Date(selectedRange.startDate);
+        const startDate = new Date(selectedRange.startDate);
+        const endDate = new Date(selectedRange.endDate);
+        const daysDiff = endDate.getTime() - startDate.getTime();
+        
+        const previousEndDate = new Date(startDate);
         previousEndDate.setTime(previousEndDate.getTime() - 24 * 60 * 60 * 1000); // Go back one day
         const previousStartDate = new Date(previousEndDate);
         previousStartDate.setTime(previousStartDate.getTime() - daysDiff);
@@ -107,8 +139,14 @@ export default function AnalyticsDashboard() {
 
   const handleDateRangeChange = (selectedLabel: string) => {
     const range = validDateRanges.find(r => r.label === selectedLabel);
-    if (range) {
-      setSelectedRange(range);
+    if (range && range.startDate && range.endDate) {
+      // Ensure the selected range has proper string values before setting
+      const validRange: DateRange = {
+        label: range.label,
+        startDate: range.startDate,
+        endDate: range.endDate
+      };
+      setSelectedRange(validRange);
     } else {
       // Fallback to default if selected range is invalid
       setSelectedRange(createDefaultDateRange());
