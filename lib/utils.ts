@@ -23,8 +23,24 @@ export function formatCurrency(amount: number): string {
 
 export function formatTime(time: string): string {
   try {
+    // Check if time is valid before processing
+    if (!time || typeof time !== 'string') {
+      return time || '';
+    }
+    
     // Assuming time is in HH:mm format
-    const [hours, minutes] = time.split(':');
+    const timeParts = time.split(':');
+    if (timeParts.length < 2) {
+      return time;
+    }
+    
+    const hours = timeParts[0];
+    const minutes = timeParts[1];
+    
+    if (!hours || !minutes) {
+      return time;
+    }
+    
     const date = new Date();
     date.setHours(parseInt(hours, 10));
     date.setMinutes(parseInt(minutes, 10));

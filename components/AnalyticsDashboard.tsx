@@ -10,10 +10,9 @@ import type { DateRange, DashboardStats, Appointment, Payment } from '@/types';
 export default function AnalyticsDashboard() {
   const [currentStats, setCurrentStats] = useState<DashboardStats | null>(null);
   const [previousStats, setPreviousStats] = useState<DashboardStats | null>(null);
-  const [selectedRange, setSelectedRange] = useState<DateRange>(getDateRanges()[2]); // Last 30 days
-  const [loading, setLoading] = useState(true);
-
   const dateRanges = getDateRanges();
+  const [selectedRange, setSelectedRange] = useState<DateRange>(dateRanges[2]); // Last 30 days
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchAnalytics() {
