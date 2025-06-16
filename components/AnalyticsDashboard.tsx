@@ -10,28 +10,33 @@ import type { DateRange, DashboardStats, Appointment, Payment } from '@/types';
 export default function AnalyticsDashboard() {
   const [currentStats, setCurrentStats] = useState<DashboardStats | null>(null);
   const [previousStats, setPreviousStats] = useState<DashboardStats | null>(null);
-  const dateRanges = getDateRanges();
   
-  // Initialize with a safe default from available date ranges
-  const [selectedRange, setSelectedRange] = useState<DateRange>(() => {
-    // Use the "Last 30 days" option if available, otherwise fallback to the first available range
-    const defaultRange = dateRanges.find(range => range.label === 'Last 30 days') || dateRanges[0];
+  // Create a safe default date range
+  const createDefaultDateRange = (): DateRange => {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
     
-    // Ensure we have valid dates, provide fallback if needed
-    if (!defaultRange || !defaultRange.startDate || !defaultRange.endDate) {
-      // Fallback to last 30 days if no valid range found
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 30);
-      
-      return {
-        label: 'Last 30 days',
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0]
-      };
+    return {
+      label: 'Last 30 days',
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0]
+    };
+  };
+
+  const dateRanges = getDateRanges();
+  const [selectedRange, setSelectedRange] = useState<DateRange>(() => {
+    const availableRanges = dateRanges.filter(range => 
+      range.startDate && range.endDate && 
+      range.startDate.trim() !== '' && range.endDate.trim() !== ''
+    );
+    
+    if (availableRanges.length > 0) {
+      const preferred = availableRanges.find(range => range.label === 'Last 30 days');
+      return preferred || availableRanges[0];
     }
     
-    return defaultRange;
+    return createDefaultDateRange();
   });
   
   const [loading, setLoading] = useState(true);
@@ -99,6 +104,21 @@ export default function AnalyticsDashboard() {
     return { value: Math.abs(change), isPositive: change >= 0 };
   };
 
+  const handleDateRangeChange = (selectedLabel: string) => {
+    const validRanges = dateRanges.filter(range => 
+      range.startDate && range.endDate && 
+      range.startDate.trim() !== '' && range.endDate.trim() !== ''
+    );
+    
+    const range = validRanges.find(r => r.label === selectedLabel);
+    if (range) {
+      setSelectedRange(range);
+    } else {
+      // Fallback to default if selected range is invalid
+      setSelectedRange(createDefaultDateRange());
+    }
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -138,6 +158,12 @@ export default function AnalyticsDashboard() {
     },
   ];
 
+  // Filter available date ranges to only show valid ones
+  const validDateRanges = dateRanges.filter(range => 
+    range.startDate && range.endDate && 
+    range.startDate.trim() !== '' && range.endDate.trim() !== ''
+  );
+
   return (
     <div className="space-y-6">
       {/* Date Range Selector */}
@@ -151,14 +177,9 @@ export default function AnalyticsDashboard() {
             <select
               className="select"
               value={selectedRange.label}
-              onChange={(e) => {
-                const range = dateRanges.find(r => r.label === e.target.value);
-                if (range && range.startDate && range.endDate) {
-                  setSelectedRange(range);
-                }
-              }}
+              onChange={(e) => handleDateRangeChange(e.target.value)}
             >
-              {dateRanges.map((range) => (
+              {validDateRanges.map((range) => (
                 <option key={range.label} value={range.label}>
                   {range.label}
                 </option>
