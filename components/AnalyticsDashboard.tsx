@@ -16,6 +16,21 @@ export default function AnalyticsDashboard() {
   const [selectedRange, setSelectedRange] = useState<DateRange>(() => {
     // Use the "Last 30 days" option if available, otherwise fallback to the first available range
     const defaultRange = dateRanges.find(range => range.label === 'Last 30 days') || dateRanges[0];
+    
+    // Ensure we have valid dates, provide fallback if needed
+    if (!defaultRange || !defaultRange.startDate || !defaultRange.endDate) {
+      // Fallback to last 30 days if no valid range found
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30);
+      
+      return {
+        label: 'Last 30 days',
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0]
+      };
+    }
+    
     return defaultRange;
   });
   
@@ -138,7 +153,7 @@ export default function AnalyticsDashboard() {
               value={selectedRange.label}
               onChange={(e) => {
                 const range = dateRanges.find(r => r.label === e.target.value);
-                if (range) {
+                if (range && range.startDate && range.endDate) {
                   setSelectedRange(range);
                 }
               }}
