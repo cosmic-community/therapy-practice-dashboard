@@ -12,8 +12,13 @@ export default function AnalyticsDashboard() {
   const [previousStats, setPreviousStats] = useState<DashboardStats | null>(null);
   const dateRanges = getDateRanges();
   const [selectedRange, setSelectedRange] = useState<DateRange>(() => {
-    // Provide a safe default if dateRanges[2] is undefined
-    return dateRanges[2] || dateRanges[0] || {
+    // Provide a safe default with proper string dates
+    const defaultRange = dateRanges[2] || dateRanges[0];
+    if (defaultRange && defaultRange.startDate && defaultRange.endDate) {
+      return defaultRange;
+    }
+    // Fallback to a safe default
+    return {
       label: 'Last 30 days',
       startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       endDate: new Date().toISOString().split('T')[0]
@@ -138,14 +143,18 @@ export default function AnalyticsDashboard() {
               value={selectedRange.label}
               onChange={(e) => {
                 const range = dateRanges.find(r => r.label === e.target.value);
-                if (range) setSelectedRange(range);
+                if (range && range.startDate && range.endDate) {
+                  setSelectedRange(range);
+                }
               }}
             >
-              {dateRanges.map((range) => (
-                <option key={range.label} value={range.label}>
-                  {range.label}
-                </option>
-              ))}
+              {dateRanges
+                .filter(range => range.startDate && range.endDate)
+                .map((range) => (
+                  <option key={range.label} value={range.label}>
+                    {range.label}
+                  </option>
+                ))}
             </select>
           </div>
         </div>
