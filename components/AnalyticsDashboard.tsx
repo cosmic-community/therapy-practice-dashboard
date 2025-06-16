@@ -24,18 +24,19 @@ export default function AnalyticsDashboard() {
     };
   };
 
-  const dateRanges = getDateRanges();
+  // Get date ranges and ensure they all have valid string values
+  const rawDateRanges = getDateRanges();
+  const validDateRanges = rawDateRanges.map(range => ({
+    label: range.label,
+    startDate: range.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: range.endDate || new Date().toISOString().split('T')[0]
+  }));
+
   const [selectedRange, setSelectedRange] = useState<DateRange>(() => {
-    const availableRanges = dateRanges.filter(range => 
-      range.startDate && range.endDate && 
-      range.startDate.trim() !== '' && range.endDate.trim() !== ''
-    );
-    
-    if (availableRanges.length > 0) {
-      const preferred = availableRanges.find(range => range.label === 'Last 30 days');
-      return preferred || availableRanges[0];
+    if (validDateRanges.length > 0) {
+      const preferred = validDateRanges.find(range => range.label === 'Last 30 days');
+      return preferred || validDateRanges[0];
     }
-    
     return createDefaultDateRange();
   });
   
@@ -105,12 +106,7 @@ export default function AnalyticsDashboard() {
   };
 
   const handleDateRangeChange = (selectedLabel: string) => {
-    const validRanges = dateRanges.filter(range => 
-      range.startDate && range.endDate && 
-      range.startDate.trim() !== '' && range.endDate.trim() !== ''
-    );
-    
-    const range = validRanges.find(r => r.label === selectedLabel);
+    const range = validDateRanges.find(r => r.label === selectedLabel);
     if (range) {
       setSelectedRange(range);
     } else {
@@ -157,12 +153,6 @@ export default function AnalyticsDashboard() {
       change: calculatePercentageChange(currentStats.activeClients, previousStats.activeClients),
     },
   ];
-
-  // Filter available date ranges to only show valid ones
-  const validDateRanges = dateRanges.filter(range => 
-    range.startDate && range.endDate && 
-    range.startDate.trim() !== '' && range.endDate.trim() !== ''
-  );
 
   return (
     <div className="space-y-6">
